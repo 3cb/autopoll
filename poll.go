@@ -30,15 +30,17 @@ func (p *Poller) Start() {
 		resp, err := http.Get(url)
 		if err != nil {
 			msg.Error = append(msg.Error, err)
-			data, err2 := ioutil.ReadAll(resp.Body)
-			if err2 != nil {
-				msg.Error = append(msg.Error, err2)
-				out <- msg
-			} else {
-				msg.Payload = data
-				out <- msg
-			}
 		}
+
+		data, err2 := ioutil.ReadAll(resp.Body)
+		if err2 != nil {
+			msg.Error = append(msg.Error, err2)
+		}
+
+		msg.Payload = data
+		out <- msg
+
+		resp.Body.Close()
 
 		for {
 			select {
@@ -49,15 +51,17 @@ func (p *Poller) Start() {
 				resp, err := http.Get(url)
 				if err != nil {
 					msg.Error = append(msg.Error, err)
-					data, err2 := ioutil.ReadAll(resp.Body)
-					if err2 != nil {
-						msg.Error = append(msg.Error, err2)
-						out <- msg
-					} else {
-						msg.Payload = data
-						out <- msg
-					}
 				}
+
+				data, err2 := ioutil.ReadAll(resp.Body)
+				if err2 != nil {
+					msg.Error = append(msg.Error, err2)
+				}
+
+				msg.Payload = data
+				out <- msg
+
+				resp.Body.Close()
 			}
 		}
 	}(p.URL, p.Interval, p.Out, p.Shutdown)
