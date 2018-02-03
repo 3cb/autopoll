@@ -5,12 +5,12 @@
 ## Setup
 
 import pack into application:
-```go
+```
 import "github.com/3cb/autopoll"
 ```
 
 install package onto system:
-```go
+```
 go get "github.com/3cb/autopoll"
 ```
 
