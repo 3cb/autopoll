@@ -19,47 +19,48 @@ func NewPoller(url string, interval time.Duration, out chan PollMsg, shutdown ch
 
 // Start spins up a goroutine that continously polls given API endpoint at interval Poller.Interval
 func (p *Poller) Start() {
-	go func() {
+	go func(url string, interval time.Duration, out chan<- PollMsg, shutdown <-chan *sync.WaitGroup) {
 		wg := &sync.WaitGroup{}
 		defer func() {
 			wg.Done()
 		}()
-		ticker := time.NewTicker(p.Interval)
+
+		ticker := time.NewTicker(interval)
 		msg := PollMsg{}
-		resp, err := http.Get(p.URL)
+		resp, err := http.Get(url)
 		if err != nil {
 			msg.Error = append(msg.Error, err)
 			data, err2 := ioutil.ReadAll(resp.Body)
 			if err2 != nil {
 				msg.Error = append(msg.Error, err2)
-				p.Out <- msg
+				out <- msg
 			} else {
 				msg.Payload = data
-				p.Out <- msg
+				out <- msg
 			}
 		}
 
 		for {
 			select {
-			case wg = <-p.Shutdown:
+			case wg = <-shutdown:
 				return
 			case <-ticker.C:
 				msg := PollMsg{}
-				resp, err := http.Get(p.URL)
+				resp, err := http.Get(url)
 				if err != nil {
 					msg.Error = append(msg.Error, err)
 					data, err2 := ioutil.ReadAll(resp.Body)
 					if err2 != nil {
 						msg.Error = append(msg.Error, err2)
-						p.Out <- msg
+						out <- msg
 					} else {
 						msg.Payload = data
-						p.Out <- msg
+						out <- msg
 					}
 				}
 			}
 		}
-	}()
+	}(p.URL, p.Interval, p.Out, p.Shutdown)
 }
 
 // Stop sends a shutdown signal to the polling goroutine to return
